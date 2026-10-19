@@ -139,13 +139,6 @@ jev-llm-poc/
 - Swap in the official SDK any time: `pip install typesafe-sdk` and
   `from typesafe_sdk import Choice, Noul, Score, TypeSafeClient`.
 
-## Talk track (suggested 5-min flow)
-
-1. **Hook** — "Every box in an agent diagram is an LLM call. Most of them don't need to be."
-2. Run **Calm sales** — both are fine, but watch the latency/cost gap.
-3. Run **Angry billing** — Jev's confidence + frustration score snap in instantly.
-4. Run **Risky / escalate** — Jev flags the destructive action for gating *before* any tool runs.
-5. **Land it** — the comparison table; "reflex layer vs reasoning layer"; they're complements.
 
 ## Notes & honesty
 
