@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>JEV Demo — Realtime Decisions vs LLM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F7F2E5; --ink:#2B1F1F; --yellow:#FFC81C; --yellow-200:#FFE599;
+    --yellow-100:#FFF2CC; --rose:#F4CCCC; --rose-500:#DD4D64; --crimson:#FB1650;
+    --gold:#BF9000; --card:#FFFFFF; --muted:#8A7F77;
+    --jev:#BF9000; --llm:#8A7F77;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:'Sora',system-ui,sans-serif;line-height:1.5;}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 80px;}
+  header{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+  .logo{width:34px;height:34px;border-radius:8px;background:var(--yellow);
+    display:grid;place-items:center;font-weight:700;color:var(--ink);font-size:18px;}
+  .brand{font-weight:700;font-size:16px;letter-spacing:.2px}
+  h1{font-size:30px;font-weight:700;margin:18px 0 4px;}
+  .sub{color:var(--muted);max-width:760px;margin:0 0 22px;font-size:15px}
+  .badge{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;
+    border-radius:999px;background:var(--yellow-100);color:var(--gold);margin-left:8px}
+  .panel{background:var(--card);border-radius:14px;padding:20px;margin-bottom:18px;}
+  textarea{width:100%;border:none;background:var(--cream);border-radius:10px;
+    padding:14px;font-family:inherit;font-size:15px;color:var(--ink);resize:vertical;min-height:72px}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+  button{font-family:inherit;font-weight:600;border:none;border-radius:10px;
+    cursor:pointer;padding:11px 18px;font-size:14px;transition:transform .05s}
+  button:active{transform:translateY(1px)}
+  .primary{background:var(--yellow);color:var(--ink)}
+  .ghost{background:var(--yellow-100);color:var(--gold)}
+  .preset{background:var(--cream);color:var(--ink);font-weight:500;font-size:13px;padding:8px 12px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.cols{grid-template-columns:1fr}}
+  .col{background:var(--card);border-radius:14px;padding:18px;border-top:4px solid var(--llm)}
+  .col.jev{border-top-color:var(--jev)}
+  .col h3{margin:0 0 2px;font-size:16px;display:flex;align-items:center;gap:8px}
+  .col .tag{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+  .metric{background:var(--cream);border-radius:10px;padding:8px 10px}
+  .metric .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+  .metric .v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+  .metric.jev .v{color:var(--gold)}
+  .bar{height:8px;border-radius:999px;background:var(--cream);overflow:hidden;margin:2px 0 14px}
+  .bar>span{display:block;height:100%;width:0;background:var(--llm);transition:width .3s}
+  .col.jev .bar>span{background:var(--jev)}
+  .stage{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin:6px 0}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--yellow-200);flex:none}
+  .dot.run{background:var(--yellow);animation:pulse 1s infinite}
+  .dot.ok{background:var(--gold)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .cards{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+  .dc{background:var(--cream);border-radius:10px;padding:10px 12px;opacity:0;
+    transform:translateY(6px);transition:all .25s}
+  .dc.show{opacity:1;transform:none}
+  .dc .name{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .dc .val{font-size:15px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .conf{font-size:11px;font-weight:600;color:var(--gold);background:var(--yellow-100);
+    padding:2px 8px;border-radius:999px}
+  .noconf{font-size:11px;color:var(--muted);font-style:italic}
+  .pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px}
+  .pill.yes{background:var(--rose);color:var(--rose-500)}
+  .pill.no{background:var(--yellow-100);color:var(--gold)}
+  .reply{background:var(--cream);border-radius:10px;padding:12px 14px;font-size:14px;
+    min-height:40px;white-space:pre-wrap}
+  .winner{margin:0 0 18px;padding:14px 18px;border-radius:14px;background:var(--yellow);
+    color:var(--ink);font-weight:600;display:none;line-height:1.6}
+  .winner b{font-weight:700}
+  h2{font-size:22px;margin:38px 0 10px}
+  .explain{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.explain{grid-template-columns:1fr}}
+  .ex{background:var(--card);border-radius:14px;padding:18px}
+  .ex h4{margin:0 0 8px;font-size:15px}
+  .ex ul{margin:8px 0 0;padding-left:18px;font-size:14px;color:#4a3c3c}
+  .ex li{margin:5px 0}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden;font-size:14px}
+  th,td{text-align:left;padding:12px 14px;vertical-align:top}
+  thead th{background:var(--ink);color:var(--cream);font-weight:600}
+  tbody tr:nth-child(even){background:var(--yellow-100)}
+  td:first-child{font-weight:600;width:200px}
+  .foot{color:var(--muted);font-size:12px;margin-top:10px}
+  code{background:var(--yellow-100);padding:1px 6px;border-radius:5px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">J</div>
+    <div class="brand">JEV Demo</div>
+  </header>
+
+  <h1>JEV Demo: Reflex Layer vs LLM <span id="modeBadge" class="badge">live</span></h1>
+  <p class="sub">One support message, handled two ways and raced in real time.
+  <b>Gemini-only</b> uses the LLM sequentially for decisions <i>and</i> reply generation.
+  <b>Jev + Gemini</b> delegates all decisions to <b>Jev</b> (BeatAPI Decisions model) in a single parallel call, leaving Gemini only for the final conversational reply.</p>
+
+  <div class="panel">
+    <textarea id="msg" placeholder="Type or paste an incoming customer message…">Hi, I've been trying to connect my Stripe account for 3 days and the integration keeps failing. I'm losing sales. Please help ASAP.</textarea>
+    <div class="row">
+      <button class="primary" id="runBtn">▶ Run comparison</button>
+      <button class="preset" data-t="My invoice was charged twice this month and I want a refund now. This is unacceptable!!">Angry billing</button>
+      <button class="preset" data-t="Please delete my account and wipe all my data permanently. I'm done.">Risky / escalate</button>
+      <button class="preset" data-t="Hi! Just wondering what the difference is between your Pro and Team plans?">Calm sales</button>
+    </div>
+  </div>
+
+  <div class="winner" id="winner"></div>
+
+  <div class="cols">
+    <div class="col" id="colLlm">
+      <h3>Gemini-only <span class="dot" id="llmLive"></span></h3>
+      <div class="tag">Gemini makes decisions sequentially · then Gemini writes the reply (2 calls)</div>
+      <div class="metrics">
+        <div class="metric"><div class="k">Decision Latency</div><div class="v" id="llmDecLat">—</div></div>
+        <div class="metric"><div class="k">Total Latency</div><div class="v" id="llmLat">—</div></div>
+        <div class="metric"><div class="k">Total Cost</div><div class="v" id="llmCost">—</div></div>
+      </div>
+      <div class="bar"><span id="llmBar"></span></div>
+      <div id="llmStages"></div>
+      <div class="cards" id="llmCards"></div>
+      <div class="reply" id="llmReply"></div>
+    </div>
+
+    <div class="col jev" id="colJev">
+      <h3>Jev + Gemini <span class="dot" id="jevLive"></span></h3>
+      <div class="tag">Jev evaluates all decisions in 1 parallel call · Gemini writes the reply (1 Jev + 1 LLM)</div>
+      <div class="metrics">
+        <div class="metric jev"><div class="k">Decision Latency</div><div class="v" id="jevDecLat">—</div></div>
+        <div class="metric jev"><div class="k">Total Latency</div><div class="v" id="jevLat">—</div></div>
+        <div class="metric jev"><div class="k">Total Cost</div><div class="v" id="jevCost">—</div></div>
+      </div>
+      <div class="bar"><span id="jevBar"></span></div>
+      <div id="jevStages"></div>
+      <div class="cards" id="jevCards"></div>
+      <div class="reply" id="jevReply"></div>
+    </div>
+  </div>
+
+  <h2>Where Jev is used — and why</h2>
+  <div class="explain">
+    <div class="ex">
+      <h4>What Jev is</h4>
+      <p style="font-size:14px;color:#4a3c3c;margin:0">A dedicated <b>System One</b> decision model accessed via BeatAPI. Rather than generating variable prose, you submit your application state plus structured questions. Jev processes all questions concurrently in a single forward pass, returning typed answers (choices, ordinal scores, or boolean noul probabilities) with calibrated confidence scores in ~300ms–1.4s.</p>
+    </div>
+    <div class="ex">
+      <h4>Where it's used</h4>
+      <ul>
+        <li><b>Dynamic Model Routing</b> — triage whether a user query needs a small fast model or a large reasoning model</li>
+        <li><b>Tool & Agent Gating</b> — evaluate whether a tool call is safe, destructive, or unauthorized before execution</li>
+        <li><b>Support & Ticket Triage</b> — instantaneously tag department, urgency, customer frustration, and human escalation</li>
+        <li><b>RAG Relevance Scoring</b> — score document chunks and relevance without generating text</li>
+        <li><b>Policy & Compliance Guardrails</b> — run low-latency policy checks on agent input/output</li>
+      </ul>
+    </div>
+    <div class="ex">
+      <h4>Why use Jev for decisions</h4>
+      <ul>
+        <li><b>Parallel Evaluation</b> — all questions evaluated concurrently in one forward pass without token inflation</li>
+        <li><b>Calibrated Probabilities</b> — returns genuine mathematical probabilities (e.g. 97% confidence); flags uncertainty</li>
+        <li><b>Deterministic Typing</b> — returns native types (Choice, Score, Noul); no prompt hacks or JSON parsing errors</li>
+        <li><b>Cost Efficiency</b> — $0 on the free tier (jev-1.13-free); $0.042/MTok on paid vs standard LLM token pricing</li>
+        <li><b>Unburdens the LLM</b> — reserves generative models strictly for complex reasoning and synthesis</li>
+      </ul>
+    </div>
+    <div class="ex">
+      <h4>Complementary Architecture</h4>
+      <ul>
+        <li>Jev cannot write conversational prose, creative explanations, or free-form dialogue</li>
+        <li>Generative LLMs excel at language synthesis, nuance, empathy, and open-ended writing</li>
+        <li><b>The Production Pattern:</b> Use Jev as the instant reflex layer for triage and gating, and call Gemini only when writing the response</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Jev vs Gemini, side by side</h2>
+  <table>
+    <thead><tr><th>Dimension</th><th>Jev (Decisions Model)</th><th>Gemini (Generative LLM)</th></tr></thead>
+    <tbody>
+      <tr><td>Core Function</td><td>Fast structured decisions, triage & routing</td><td>Open-ended reasoning, writing & synthesis</td></tr>
+      <tr><td>Execution Model</td><td>All questions evaluated in parallel in 1 forward pass</td><td>Sequential token-by-token autoregression</td></tr>
+      <tr><td>Output Guarantee</td><td>Guaranteed typed outputs (Choice, Score, Noul)</td><td>Unstructured text forced into JSON via prompting</td></tr>
+      <tr><td>Uncertainty / Calibration</td><td>Calibrated mathematical probability & confidence</td><td>Generative confidence (uncalibrated, prone to drift)</td></tr>
+      <tr><td>Decision Latency</td><td>~300 ms – 1.4 s (API roundtrip)</td><td>~1.8 s – 4.0 s (generating JSON tokens)</td></tr>
+      <tr><td>Decision Cost</td><td>$0 (free model) / $0.042 per MTok</td><td>Standard LLM token pricing (input + output tokens)</td></tr>
+      <tr><td>Language Generation</td><td>None (cannot generate free-form text)</td><td>High quality natural language & dialogue</td></tr>
+      <tr><td>Best Architectural Role</td><td colspan="2"><b>Complementary — not competitors.</b> Jev acts as the instant reflex layer for decisions and routing; Gemini acts as the reasoning layer for conversational generation.</td></tr>
+    </tbody>
+  </table>
+  <p class="foot">Latency & cost figures are based on real-time execution; live cost counters use current provider pricing. The free Jev model (jev-1.13-free) via BeatAPI costs $0.</p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const PRETTY = {department:"Department", frustration:"Frustration", is_urgent:"Urgent?",
+  is_risky:"Risky action?", needs_human:"Escalate to human?"};
+const FRUST = ["Calm","Frustrated","Very angry"];
+
+let es = null;
+
+document.querySelectorAll('.preset').forEach(b =>
+  b.addEventListener('click', () => { $('msg').value = b.dataset.t; }));
+
+function reset(){
+  if(es){ es.close(); es=null; }
+  for(const s of ['llm','jev']){
+    $(s+'DecLat').textContent='—';
+    $(s+'Lat').textContent='—';
+    $(s+'Cost').textContent='—';
+    $(s+'Bar').style.width='0';
+    $(s+'Stages').innerHTML='';
+    $(s+'Cards').innerHTML='';
+    $(s+'Reply').textContent='';
+    $(s+'Live').className='dot';
+  }
+  $('winner').style.display='none';
+  state = {
+    llm:{t0:performance.now(),cost:0,lat:0,decLat:0},
+    jev:{t0:performance.now(),cost:0,lat:0,decLat:0}
+  };
+}
+let state;
+
+function fmtMs(s){ return (s*1000).toFixed(0)+' ms'; }
+function fmtUsd(v){ return '$'+v.toFixed(6); }
+
+function addStage(side, d){
+  const wrap = $(side+'Stages');
+  let el = document.getElementById(side+'-stage-'+d.stage);
+  if(!el){
+    el = document.createElement('div'); el.className='stage';
+    el.id = side+'-stage-'+d.stage;
+    el.innerHTML = '<span class="dot run"></span><span class="lbl"></span>';
+    wrap.appendChild(el);
+  }
+  el.querySelector('.lbl').textContent = d.label;
+  el.querySelector('.dot').className = 'dot run';
+  $(side+'Live').className='dot run';
+}
+function stageDone(side, stage, latency_s){
+  const el = document.getElementById(side+'-stage-'+stage);
+  if(el){
+    el.querySelector('.dot').className='dot ok';
+    if(latency_s != null){
+      const lbl = el.querySelector('.lbl');
+      const timeStr = latency_s < 1 ? Math.round(latency_s * 1000) + ' ms' : latency_s.toFixed(2) + ' s';
+      lbl.innerHTML += ` <span style="font-weight:700;color:var(--ink);margin-left:6px">· ${timeStr}</span>`;
+    }
+  }
+}
+
+function renderCards(side, cards){
+  const wrap = $(side+'Cards'); wrap.innerHTML='';
+  for(const key of Object.keys(PRETTY)){
+    const c = cards[key]; if(!c) continue;
+    const div = document.createElement('div'); div.className='dc';
+    let valHtml;
+    if(key==='frustration'){
+      const idx = Math.round(Number(c.value)||0);
+      valHtml = (FRUST[idx]||c.value);
+    } else if(key==='department'){
+      valHtml = String(c.value).charAt(0).toUpperCase()+String(c.value).slice(1);
+    } else {
+      const yes = c.value===true;
+      valHtml = `<span class="pill ${yes?'yes':'no'}">${yes?'YES':'NO'}</span>`;
+    }
+    const conf = (c.confidence!=null)
+      ? `<span class="conf">${Math.round(c.confidence*100)}% conf</span>`
+      : `<span class="noconf">no confidence</span>`;
+    div.innerHTML = `<div class="name">${PRETTY[key]}</div>
+      <div class="val"><span>${valHtml}</span>${conf}</div>`;
+    wrap.appendChild(div);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>div.classList.add('show')));
+  }
+}
+
+function tick(){
+  for(const s of ['llm','jev']){
+    const st = state[s];
+    if(st.running){
+      const el = performance.now()-st.t0;
+      $(s+'Lat').textContent = (el/1000<10? (el).toFixed(0)+' ms' : (el/1000).toFixed(1)+' s');
+      $(s+'Bar').style.width = Math.min(100, el/3500*100)+'%';
+    }
+  }
+  if(running) requestAnimationFrame(tick);
+}
+let running=false;
+
+function run(){
+  reset();
+  const msg = $('msg').value.trim(); if(!msg) return;
+  state.llm.running=true; state.jev.running=true; running=true;
+  state.llm.t0=performance.now(); state.jev.t0=performance.now();
+  requestAnimationFrame(tick);
+
+  es = new EventSource(`/run?message=${encodeURIComponent(msg)}`);
+
+  es.addEventListener('start', e=>{
+    const d=JSON.parse(e.data);
+    $('modeBadge').textContent = d.mode || 'live';
+  });
+  es.addEventListener('stage', e=>{ const d=JSON.parse(e.data); addStage(d.side,d); });
+  es.addEventListener('decisions', e=>{
+    const d=JSON.parse(e.data);
+    state[d.side].decLat = d.latency_s;
+    $(d.side+'DecLat').textContent = fmtMs(d.latency_s);
+    stageDone(d.side,'classify', d.latency_s);
+    renderCards(d.side, d.cards);
+  });
+  es.addEventListener('reply', e=>{
+    const d=JSON.parse(e.data); stageDone(d.side,'generate', d.latency_s);
+    $(d.side+'Reply').textContent = d.reply;
+  });
+  es.addEventListener('done', e=>{
+    const d=JSON.parse(e.data); const s=d.side;
+    state[s].running=false; state[s].lat=d.total_latency_s; state[s].cost=d.total_cost_usd;
+    $(s+'Lat').textContent = fmtMs(d.total_latency_s);
+    $(s+'Cost').textContent = fmtUsd(d.total_cost_usd);
+    $(s+'Bar').style.width='100%'; $(s+'Live').className='dot ok';
+  });
+  es.addEventListener('error', e=>{
+    try {
+      const d = JSON.parse(e.data);
+      if (d && d.error) {
+        alert("API Error: " + d.error);
+      }
+    } catch (_) {}
+    running=false; if(es){es.close();es=null;}
+  });
+  es.addEventListener('complete', e=>{
+    running=false; es.close(); es=null; showWinner();
+  });
+  es.onerror = ()=>{ running=false; if(es){es.close();es=null;} };
+}
+
+function showWinner(){
+  const l=state.llm, j=state.jev;
+  if(!l.lat||!j.lat) return;
+  const decSpd = (l.decLat && j.decLat) ? (l.decLat / j.decLat) : null;
+  const totSpd = (l.lat / j.lat);
+  const sav = l.cost ? (1 - j.cost / l.cost) * 100 : 0;
+  $('winner').style.display='block';
+  let html = `<b>Reflex Decision Phase:</b> Jev completed all 5 decisions in <b>${fmtMs(j.decLat)}</b> (${decSpd ? decSpd.toFixed(1) + '× faster' : 'faster'} than Gemini's ${fmtMs(l.decLat)}) at <b>$0 cost</b> with calibrated probabilities.`;
+  html += `<br><span style="font-size:13px;font-weight:500;opacity:0.9">End-to-end total (including identical Gemini reply generation): <b>${totSpd.toFixed(1)}× faster</b> overall and <b>${sav.toFixed(0)}% cheaper</b>.</span>`;
+  $('winner').innerHTML = html;
+}
+
+$('runBtn').addEventListener('click', run);
+</script>
+</body>
+</html>
